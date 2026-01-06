@@ -1,12 +1,24 @@
 #ifndef IP2SI_H
-# define IP2SI_H
+#define IP2SI_H
 
-#include <unistd.h>
+#include <stddef.h>
 
-void    ip_putchar(char c);
-void    ip_swap(int *a, int *b);
-void    ip_putstr(char *str);
-int     ip_strlen(char *str);
-int     ip_strcmp(char *s1, char *s2);
+typedef struct s_student {
+    char *name;
+    int age;
+    char *group;
+    struct s_student *next;
+} t_student;
+
+void ip_putchar(char c);
+
+void ip_swap(int *a, int *b);
+void ip_putnbr(int nb);
+void *ip_memset(void *s, int c, size_t n);
+void *ip_memcpy(void *dest, const void *src, size_t n);
+int *ip_range(int min, int max);
+char *ip_strdup(char *src);
+void ip_init_student(t_student *student, char *name, int age, char *group);
+int ip_is_elf(char *file_header);
 
 #endif

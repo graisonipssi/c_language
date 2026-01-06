@@ -1,5 +1,5 @@
-#include <stddef.h> // Pour NULL
-#include "student.h"
+#include <stddef.h>
+#include "ip2si.h"
 
 void ip_init_student(t_student *student, char *name, int age, char *group) {
     if (student) {
