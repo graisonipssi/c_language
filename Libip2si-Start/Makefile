@@ -11,7 +11,14 @@ SRCS    = sources/ip_putchar.c \
           sources/ip_range.c \
           sources/ip_strdup.c \
           sources/ip_struct_magic.c \
-          sources/ip_magic_number.c
+          sources/ip_magic_number.c \
+          sources/ip_iterative_factorial.c \
+          sources/ip_pow.c \
+          sources/simple_xor.c \
+          sources/ip_file_info.c \
+          sources/ip_cat.c \
+          sources/ip_cp.c \
+          sources/ip_crypt_file.c
 
 OBJS    = $(SRCS:.c=.o)
 

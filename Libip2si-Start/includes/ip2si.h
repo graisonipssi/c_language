@@ -21,4 +21,13 @@ char *ip_strdup(char *src);
 void ip_init_student(t_student *student, char *name, int age, char *group);
 int ip_is_elf(char *file_header);
 
+int     ip_iterative_factorial(int nb);
+int     ip_pow(int nb, int power);
+char    *simple_xor(char *str, char key);
+
+void    ip_file_info(char *filename);
+void    ip_cat(char *filename);
+void    ip_cp(char *src, char *dest);
+void    ip_crypt_file(char *filename, char key);
+
 #endif
