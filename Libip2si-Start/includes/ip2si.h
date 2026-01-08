@@ -30,4 +30,7 @@ void    ip_cat(char *filename);
 void    ip_cp(char *src, char *dest);
 void    ip_crypt_file(char *filename, char key);
 
+int     ip_atoi(char *str);
+void    ip_hexdump(void *addr, int len);
+
 #endif

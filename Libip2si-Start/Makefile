@@ -18,8 +18,9 @@ SRCS    = sources/ip_putchar.c \
           sources/ip_file_info.c \
           sources/ip_cat.c \
           sources/ip_cp.c \
-          sources/ip_crypt_file.c
-
+          sources/ip_crypt_file.c \
+          sources/ip_atoi.c \
+          sources/ip_hexdump.c
 OBJS    = $(SRCS:.c=.o)
 
 all: $(NAME)
