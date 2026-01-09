@@ -29,13 +29,16 @@ Donc, mon point de rupture est à : $64 + 8 = 72$ octets.
 
 ## 3. Stratégie d'exploitation
 Mon but est de forcer le programme à exécuter la fonction `win_function` au lieu de finir normalement.
-J'ai vu dans le code que `win_function` est présente mais jamais appelée par le main.
 
 **Mon plan d'attaque :**
-1.  Lancer le programme en lui passant un argument piégé.
-2.  Cet argument contiendra **72 caractères quelconques** pour remplir le buffer et écraser le RBP.
-3.  Juste après ces 72 octets, je collerai l'**adresse de `win_function`**.
-4.  Quand la fonction vulnérable fera son `ret`, elle lira mon adresse piégée et sautera dans `win_function`.
+1.  **Injection via argv :** J'utilise le premier argument du programme pour injecter mon payload. Comme `strcpy` s'arrête au premier octet nul (`\x00`), je dois m'assurer de retirer les zéros terminaux de mon adresse lors de la construction du payload.
+2.  **Padding :** J'envoie **72 caractères quelconques** pour remplir le buffer et le RBP sauvegardé.
+3.  **Détournement (Override RIP) :** Juste après, je place l'adresse de `win_function`.
+
+**Contrainte technique (Stack Alignment) :**
+Lors de mes tests, sauter directement au début de `win_function` provoquait un crash au moment de l'exécution de `system("/bin/sh")`.
+Ceci est dû à une contrainte d'alignement de la pile sur 16 octets imposée par l'architecture x64 pour les instructions SIMD.
+**Solution :** J'ai ajouté **+1** à l'adresse de `win_function` pour sauter l'instruction `push rbp`. Cela décale la pile de 8 octets, rétablit l'alignement correct, et permet au shell de s'ouvrir sans planter.
 
 ## 4. Résultats
 J'ai automatisé cette attaque avec le script `exploit.py` (en utilisant `pwntools`).
