@@ -1,46 +1,33 @@
-# Rapport Projet : grimoire
+# Rapport Projet : Grimoire
 
-### Guillaume RAISON - MCS 26.3
-### Date du rapport : 09/01/2026
+**Auteur :** Guillaume RAISON
+**Module :** Exploitation Binaire (Use-After-Free)
 
-## 1. Identification de la vulnérabilité
-La vulnérabilité est un **Use-After-Free (UAF)** situé dans la gestion de la mémoire du "sortilège" (`active_spell`).
+## 1. Analyse de la vulnérabilité
+La faille se situe dans la gestion de la mémoire du pointeur `active_spell` (Use-After-Free).
 
-* **Fichier :** `grimoire.c`
-* **Localisation :** Ligne 70, dans l'option 3 "Write in Diary".
-    ```c
-    if (active_spell) free(active_spell);
-    ```
+* **L'erreur :** Dans l'option 3 ("Write in Diary"), si l'utilisateur écrit "Voldemort", le programme appelle `free(active_spell)`.
+* **La persistance :** Le programme ne remet pas le pointeur `active_spell` à `NULL` après la libération.
+* **La conséquence :** Le pointeur reste "dangling" (il pointe vers une zone mémoire considérée comme libre). Si l'on effectue une nouvelle allocation (via le journal), l'allocateur (malloc) réutilise cette même zone mémoire.
 
-## 2. Analyse et calcul de l'offset
-Le programme présente des caractéristiques spécifiques qui facilitent l'exploitation :
+## 2. Stratégie d'Exploitation
+Le but est d'injecter un **Shellcode** qui nous donne les droits root, puisque le binaire possède le bit SUID.
 
-1.  **Mémoire cxécutable :** La fonction `setup_spell_memory` utilise `mprotect` pour rendre la zone du heap exécutable RWX.
-Nous n'avons donc pas besoin de ROP, un simple shellcode suffit.
-2.  **Taille fixe :** Les allocations pour le sort (`choice 1`) et pour le journal (`choice 3`) sont identiques : `CHUNK_SIZE` (128 octets).
-3.  **Comportement de l'allocateur :** Sur Linux, l'allocateur mémoire (glibc malloc) a tendance à recycler le dernier chunk libéré s'il correspond à la taille demandée (LIFO / tcache).
+### A. Manipulation du Heap
+1.  **Allocation :** J'utilise l'option 1 pour allouer le sort. Le pointeur `active_spell` est initialisé.
+2.  **Libération (UAF) :** J'utilise l'option 3 avec le mot "Voldemort" pour libérer la mémoire, tout en gardant le pointeur actif.
+3.  **Réallocation & Injection :** J'utilise l'option 3 pour écrire une nouvelle entrée. `malloc` me redonne la même adresse. J'y écris mon payload.
 
-## 3. Stratégie d'exploitation
-L'objectif est d'obtenir un shell **Root** (UID 0). Comme le binaire est SUID, nous devons appeler `setuid(0)` avant de lancer `/bin/sh`.
+### B. Construction du Payload
+La zone mémoire est rendue exécutable par le programme (`mprotect`). Je peux donc y placer directement des instructions assembleur.
 
-**Étapes de l'attaque :**
-1.  **Allocation :** Allouer un sort légitime. `active_spell` pointe vers l'adresse `A`.
-2.  **Libération :** Écrire "Voldemort" dans le journal.
-    * Cela déclenche `free(active_spell)`.
-    * L'adresse `A` est marquée comme libre, mais `active_spell` pointe toujours vers `A`.
-3.  **Réallocation & injection:** Écrire une nouvelle entrée dans le journal sans "Voldemort".
-    * `malloc(128)` va recycler l'adresse `A` pour le journal.
-    * Nous écrivons notre **Shellcode** dans ce buffer.
-    * Maintenant, `active_spell` pointe vers notre Shellcode.
-4.  **Exécution (Choix 2) :** Lancer le sort. Le programme exécute le contenu de l'adresse `A`, qui est maintenant notre code malveillant.
+* **NOP Sled :** J'ajoute 60 octets de `\x90` (NOP) au début. Cela permet de "glisser" vers le code même si l'alignement mémoire varie légèrement.
+* **Shellcode :** J'utilise un shellcode Linux x64 classique :
+    1.  `setuid(0)` : Pour restaurer les privilèges root effectifs.
+    2.  `execve("/bin/sh", ...)` : Pour lancer le terminal.
 
-**Payload utilisé :**
-* `setreuid(0, 0)` : Pour restaurer les privilèges root effectifs.
-* `execve("/bin/sh", ...)` : Pour lancer le shell.
+## 3. Exécution
+J'utilise l'option 2 ("Cast Spell"). Le programme exécute la fonction située à l'adresse `active_spell`. Comme j'ai remplacé son contenu par mon shellcode, c'est mon code qui s'exécute avec les privilèges du propriétaire du fichier (Root).
 
-## 4. Résultats
-L'exécution du script `exploit.py` automatise ce processus.
-* Le script détecte le prompt.
-* Il effectue la manipulation du heap.
-* Il injecte le shellcode généré par `pwntools`.
-* Le message final confirme l'obtention d'un shell avec les droits root (`uid=0`).
+## 4. Résultat
+L'exécution du script `exploit.py` permet d'obtenir un shell interactif. La commande `id` retourne `uid=0(root)`, confirmant la réussite de l'élévation de privilèges.
